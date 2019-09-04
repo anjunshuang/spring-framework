@@ -301,6 +301,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 */
 	@Override
 	public int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException {
+		// TODO: 2019/9/4  1.encodedResource对参数resource进行封装
 		return loadBeanDefinitions(new EncodedResource(resource));
 	}
 
@@ -310,13 +311,14 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * allowing to specify an encoding to use for parsing the file
 	 * @return the number of bean definitions found
 	 * @throws BeanDefinitionStoreException in case of loading or parsing errors
+	 * todo 真正的数据准备阶段
 	 */
 	public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
 		Assert.notNull(encodedResource, "EncodedResource must not be null");
 		if (logger.isInfoEnabled()) {
 			logger.info("Loading XML bean definitions from " + encodedResource);
 		}
-
+		// TODO: 2019/9/4 通过属性来记录已经加载加载的资源
 		Set<EncodedResource> currentResources = this.resourcesCurrentlyBeingLoaded.get();
 		if (currentResources == null) {
 			currentResources = new HashSet<>(4);
@@ -327,12 +329,15 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
 		}
 		try {
+			//todo 从encodedResource中获取已经封装好的resource对象，并再次获取其中的inputStream
 			InputStream inputStream = encodedResource.getResource().getInputStream();
 			try {
+				/// TODO: 2019/9/4 inputSource这个类不来自于spring，它的全路径是org.xml.sax.InputSource
 				InputSource inputSource = new InputSource(inputStream);
 				if (encodedResource.getEncoding() != null) {
 					inputSource.setEncoding(encodedResource.getEncoding());
 				}
+				// TODO: 2019/9/4 逻辑的核心部分，王牌中的王牌，核心中的核心
 				return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
 			}
 			finally {
@@ -388,7 +393,10 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 			throws BeanDefinitionStoreException {
 		try {
+			// TODO: 2019/9/4 1.获取对XML文件的验证模式---就是像看看到底是用的XSD的还是DTD的格式进行解析
+			// TODO: 2019/9/4 2.加载XML文件，并得到对应的Document
 			Document doc = doLoadDocument(inputSource, resource);
+			// TODO: 2019/9/4 3.根据返回的document注册bean信息，复杂很复杂，重头戏
 			return registerBeanDefinitions(doc, resource);
 		}
 		catch (BeanDefinitionStoreException ex) {
@@ -426,6 +434,18 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see DocumentLoader#loadDocument
 	 */
 	protected Document doLoadDocument(InputSource inputSource, Resource resource) throws Exception {
+		// TODO: 2019/9/4 获取对XML文件的验证模式  getValidationModeForResource
+		// TODO: 2019/9/4 解析校验模式：简单来说就是看是否包含DOVCTYPE，如果包含就是DTD，不包含就是XSD
+		/**
+		 * todo 2019/9/4 getEntityResolver 如果SAX应用程序需要实现自定以处理外部实体，则必须实现此接口并使用setEntityResolver方法向SAX驱动器注册一个实例
+		 * todo 大概就是，对于解析一个XML，SAX首先读取该XML文档上的声明，根据声明去寻找相应的DTD定义，以便对文档j进行一个验证。
+		 * todo 默认的寻找规则，通过网络（实际就是声明DTD的URI地址）来下载相应的DTD声明，并进行验证。
+		 * todo 现在是一个漫长的过程，当遇到网络中断的情况或声明不可用的情况，会报错，就是因为相应的DTD声明每次有被找到的原因。
+		 	* todo EntityResolver接口声明：public abstract InputSource resolveEntity (String publicId, String systemId) throws SAXException, IOException;
+		 	* todo 接收两个参数publicId和systemId，XSD和DTD读到时两个参数略有不同，XSD的publicId为null，systemId的内容XSD和DTD基本相同
+		 	* todo 上述提到，验证文件默认的加载方式是通过URL进行网络下载获取，这样会造成延迟，用户体验也不好，一般的做法是将验证文件放置再自己的项目里。
+		 	* todo 如何才能将URL转换为自己工程里对应的地址文件呢？？？
+		 */
 		return this.documentLoader.loadDocument(inputSource, getEntityResolver(), this.errorHandler,
 				getValidationModeForResource(resource), isNamespaceAware());
 	}
@@ -440,9 +460,11 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 */
 	protected int getValidationModeForResource(Resource resource) {
 		int validationModeToUse = getValidationMode();
+		// TODO: 2019/9/4 如果手动指定了检测模式，就使用指定的检测模式 
 		if (validationModeToUse != VALIDATION_AUTO) {
 			return validationModeToUse;
 		}
+		// TODO: 2019/9/4 如果未指定则使用自动检测到的模式
 		int detectedMode = detectValidationMode(resource);
 		if (detectedMode != VALIDATION_AUTO) {
 			return detectedMode;
@@ -503,9 +525,15 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
 	 */
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		// TODO: 2019/9/4 使用 DefaultBeanDefinitionDocumentReader实例化BeanDefinitionDocumentReader
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
+		// TODO: 2019/9/4 将环境变量设置其中---暂时没看到在哪里做的
+		// TODO: 2019/9/4 在实例化 BeanDefinitionReader时候会将BeanDefinitionRegister传入，默认使用继承自DefaultListableBeanFactory
+		// TODO: 2019/9/4 记录统计前BeanDefinition总数 
 		int countBefore = getRegistry().getBeanDefinitionCount();
+		// TODO: 2019/9/4 加载及注册bean
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+		// TODO: 2019/9/4 记录本次加载eanDefinition个数
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}
 

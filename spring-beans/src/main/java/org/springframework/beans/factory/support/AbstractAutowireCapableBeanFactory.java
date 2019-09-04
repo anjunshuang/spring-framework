@@ -167,6 +167,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	public AbstractAutowireCapableBeanFactory() {
 		super();
+		//todo 忽略给定接口的自动装配功能
+		// 目的：例如，A中有属性B，spring在获取A的bean时候其属性B还没有初始化，那么spring会自动初始化B，这是spring的一个重要特性。
+		// 但是某些情况下，B不会被初始化，其中一种情况就是B实现了BeanNameAware接口
+		//todo spring是这样介绍的，自动装配时忽略给定的依赖接口，典型应用就是通过其他方式解析Application上下文注册依赖，类似于BeanFactory通过BeanFactoryAware进入注入，
+		// 或者ApplicationContext通过ApplicationContext通过ApplicationContextAware进行注入。
 		ignoreDependencyInterface(BeanNameAware.class);
 		ignoreDependencyInterface(BeanFactoryAware.class);
 		ignoreDependencyInterface(BeanClassLoaderAware.class);

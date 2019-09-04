@@ -89,12 +89,15 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * (or DTD, historically).
 	 * <p>Opens a DOM Document; then initializes the default settings
 	 * specified at the {@code <beans/>} level; then parses the contained bean definitions.
+	 * todo 实现BeanDefinitionDocumentReader
+	 * todo 重要目的之一就是提取root，以便于再次将root作为参数继续BeanDefinition的注册
 	 */
 	@Override
 	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
 		this.readerContext = readerContext;
 		logger.debug("Loading bean definitions");
 		Element root = doc.getDocumentElement();
+		// TODO: 2019/9/4 到了这块，重要要开始进行解析了，不容易不容易
 		doRegisterBeanDefinitions(root);
 	}
 
@@ -120,16 +123,18 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * Register each bean definition within the given root {@code <beans/>} element.
 	 */
 	protected void doRegisterBeanDefinitions(Element root) {
-		// Any nested <beans> elements will cause recursion in this method. In
-		// order to propagate and preserve <beans> default-* attributes correctly,
-		// keep track of the current (parent) delegate, which may be null. Create
-		// the new (child) delegate with a reference to the parent for fallback purposes,
-		// then ultimately reset this.delegate back to its original (parent) reference.
-		// this behavior emulates a stack of delegates without actually necessitating one.
+		// Any nested <beans> elements will cause recursion in this method. In---任何嵌套的元素都会在这个方法中引起递归。在
+		// order to propagate and preserve <beans> default-* attributes correctly,---为了正确地传播和保存 default-*属性，
+		// keep track of the current (parent) delegate, which may be null. Create---跟踪当前(父)委托，它可能为空。创建
+		// the new (child) delegate with a reference to the parent for fallback purposes,---新的(子)委托，该委托引用父委托作为备用，
+		// then ultimately reset this.delegate back to its original (parent) reference.---然后最终将this.delegate重置回它的原始(父)引用。
+		// this behavior emulates a stack of delegates without actually necessitating one.---这个行为模拟了一堆委托，实际上并不需要一个。
+		//专门处理解析
 		BeanDefinitionParserDelegate parent = this.delegate;
 		this.delegate = createDelegate(getReaderContext(), root, parent);
 
 		if (this.delegate.isDefaultNamespace(root)) {
+			// TODO: 2019/9/4 处理profile属性
 			String profileSpec = root.getAttribute(PROFILE_ATTRIBUTE);
 			if (StringUtils.hasText(profileSpec)) {
 				String[] specifiedProfiles = StringUtils.tokenizeToStringArray(
@@ -143,9 +148,12 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				}
 			}
 		}
-
+		// TODO: 2019/9/4 解析前处理，留给子类实现 
+		// TODO: 2019/9/4 学习到的小知识点：一个类要么是面向继承设计的，要么就用final修饰，此类中并没有final修饰，所以是面向继承的--->模板方法的设计思想
 		preProcessXml(root);
+		// TODO: 2019/9/4 真真正正的解析 
 		parseBeanDefinitions(root, this.delegate);
+		// TODO: 2019/9/4 解析后处理，留给子类实现
 		postProcessXml(root);
 
 		this.delegate = parent;
@@ -165,6 +173,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * @param root the DOM root element of the document
 	 */
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
+		// TODO: 2019/9/4 对beans的处理 
 		if (delegate.isDefaultNamespace(root)) {
 			NodeList nl = root.getChildNodes();
 			for (int i = 0; i < nl.getLength(); i++) {
@@ -172,6 +181,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				if (node instanceof Element) {
 					Element ele = (Element) node;
 					if (delegate.isDefaultNamespace(ele)) {
+						// TODO: 2019/9/4 对bean的处理 
 						parseDefaultElement(ele, delegate);
 					}
 					else {

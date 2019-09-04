@@ -64,6 +64,8 @@ public class DefaultDocumentLoader implements DocumentLoader {
 	/**
 	 * Load the {@link Document} at the supplied {@link InputSource} using the standard JAXP-configured
 	 * XML parser.
+	 * todo SAX解析XML文档的标准套路
+	 * todo 先创建DocumentBuilderFactory，再通过DocumentBuilderFactory获取DocumentBuilder，进而解析inputSource来返回Document对象（本人不太熟）
 	 */
 	@Override
 	public Document loadDocument(InputSource inputSource, EntityResolver entityResolver,
